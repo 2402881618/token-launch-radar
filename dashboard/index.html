@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar — the launch watchlist, ranked</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="pulse"></span>TOKEN RADAR</div>
+  <div class="topmeta"><span id="asof"></span> · <span id="src"></span> · model <span id="mver"></span></div>
+</header>
+
+<main>
+  <section class="lede">
+    <h1>Every protocol that records no token, ranked by what a launch could be worth.</h1>
+    <p>The snapshot's whole watchlist, plus every other pre-token protocol that is not somebody else's wrapped, staked or bridged product — including protocols above the $50M floor that the watchlist leaves out. An implied value is a model from TVL, growth and age — never a price, never a promise.</p>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="board" class="on">Pre-token · <span id="nBoard"></span></button>
+    <button data-tab="live">Live token · <span id="nLive"></span></button>
+    <button data-tab="aside">Set aside · <span id="nAside"></span></button>
+    <button data-tab="model">Model &amp; calibration</button>
+  </nav>
+
+  <section class="controls" id="controls">
+    <input id="q" type="search" placeholder="Search name or slug…" aria-label="Search">
+    <select id="cat" aria-label="Category"><option value="">All categories</option></select>
+    <select id="chain" aria-label="Chain"><option value="">All chains</option></select>
+    <select id="sort" aria-label="Sort">
+      <option value="implied">Sort: implied value</option>
+      <option value="tvl">Sort: TVL</option>
+      <option value="growth">Sort: 7-day growth</option>
+      <option value="age">Sort: age</option>
+      <option value="name">Sort: name</option>
+    </select>
+    <span id="count" class="count"></span>
+  </section>
+
+  <section id="viewBoard">
+    <div class="tablewrap"><table id="board">
+      <thead><tr>
+        <th data-k="rank">#</th><th data-k="name">Protocol</th><th data-k="tvl">TVL</th>
+        <th data-k="growth">7d</th><th data-k="age">Age</th><th data-k="mult">Cat. multiple</th>
+        <th data-k="implied">Implied value</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    <p class="note">Implied value = TVL × category multiple × growth × maturity. The bar shows each row against the top row. Click a protocol for its model breakdown and farm plan.</p>
+  </section>
+
+  <section id="viewLive" hidden>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Protocol</th><th>TVL</th><th>Market cap</th><th>MC / TVL</th><th>7d</th></tr></thead>
+      <tbody id="liveRows"></tbody>
+    </table></div>
+    <p class="note">These protocols already trade, so the market sets their value — the board shows them for the calibration they give, not as launches. A protocol's market cap divided by its TVL is the ratio the category multiples are built from.</p>
+  </section>
+
+  <section id="viewAside" hidden>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Protocol</th><th>TVL</th><th>Why it is set aside</th></tr></thead>
+      <tbody id="asideRows"></tbody>
+    </table></div>
+    <p class="note">Each of these records no token, yet none is a launch of its own: a staked or wrapped form of a token that already trades, a bridge, a versioned pool, or an exchange's product. Saying otherwise would be the radar inventing launches.</p>
+  </section>
+
+  <section id="viewModel" hidden>
+    <div class="modelgrid">
+      <div class="card">
+        <h2>The formula</h2>
+        <p class="formula">implied = TVL × category&nbsp;multiple × growth&nbsp;× maturity</p>
+        <ul class="facts">
+          <li><b>Category multiple</b> — the median market-cap / TVL of the live-token protocols in the same category, with each peer's ratio capped at 2.0 and the median shrunk toward the global median (four prior observations), then clamped to 0.05–0.80. A category with fewer than three live peers takes the global median, so no single protocol can set a whole category's multiple.</li>
+          <li><b>Growth</b> — 1 + clamp(7-day TVL change, −60%, +120%) / 100 × 0.5.</li>
+          <li><b>Maturity</b> — 0.55 + 0.45 × √(min(age, 3 years) / 3 years). It rises fast in the first year and then saturates; an unknown age counts as one year.</li>
+          <li><b>Rank</b> — the whole board is sorted by implied value, strongest first. No protocol name is ever special-cased.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Try the model</h2>
+        <p>Move a weight and the board re-ranks itself with the same functions the program uses. Reset brings the published board back.</p>
+        <label>Growth weight <b id="gwVal">0.50</b><input id="gw" type="range" min="0" max="1" step="0.05" value="0.5"></label>
+        <label>Maturity floor <b id="mfVal">0.55</b><input id="mf" type="range" min="0.3" max="0.8" step="0.05" value="0.55"></label>
+        <button id="reset" class="btn">Reset to the published model</button>
+        <p id="sandboxNote" class="sandboxnote">Showing the published board.</p>
+      </div>
+    </div>
+    <h2 id="calHead">Calibration — the live-token peers behind every multiple</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Category</th><th>Live peers</th><th>Their median MC / TVL</th><th>Multiple used</th></tr></thead>
+      <tbody id="calRows"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<aside id="detail" class="detail" hidden>
+  <button id="closeDetail" class="close" aria-label="Close">×</button>
+  <div id="detailBody"></div>
+</aside>
+
+<footer>
+  <p>Method — one snapshot of 758 DefiLlama protocols (40 on the watchlist, floor $50,000,000), scored by the formula above. The board ranks 198 protocols: the whole watchlist and every other pre-token protocol that is not somebody else's wrapped, staked or bridged product, including protocols above the $50M floor that the watchlist leaves out. Farm plans are generated from each protocol's own category, chains, TVL and age, with a cost and a time on every step.</p>
+  <p>Read it honestly — an implied value is the model's read of the snapshot, not a price and not a promise. A protocol "records no token" in this snapshot; that is not proof it has none. Farm at your own risk, with money you can lose, and claim only from a protocol's own link. This page makes no network requests.</p>
+</footer>
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
