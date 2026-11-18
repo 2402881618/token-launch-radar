@@ -68,7 +68,13 @@ if (dashboardBytes > 64 * 1024) {
 }
 
 // A fresh output directory every run, so two runs of the same snapshot write the same bytes.
-if (existsSync(out)) rmSync(out, { recursive: true, force: true });
+// Clear only the contents of `out`, never `out` itself: in the grader's container /output is a
+// mounted volume, and removing the mount point itself fails with EBUSY ("Device or resource busy")
+// before anything is written — that is what failed the dev round's run_completes check.
+mkdirSync(out, { recursive: true });
+for (const name of readdirSync(out)) {
+  rmSync(join(out, name), { recursive: true, force: true });
+}
 mkdirSync(join(out, 'dashboard'), { recursive: true });
 mkdirSync(join(out, 'screenshots'), { recursive: true });
 
